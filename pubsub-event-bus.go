@@ -44,14 +44,19 @@ func toPubsubMessage(message ycq.EventMessage) (*pubsub.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &pubsub.Message{Data: buffer}, nil
+	return &pubsub.Message{
+		Data:        buffer,
+		OrderingKey: message.AggregateID(),
+	}, nil
 }
 
 func (p *pubsubBus) PublishEvent(message ycq.EventMessage) {
 	p.internalBus.PublishEvent(message)
 	psMsg, err := toPubsubMessage(message)
 	if err != nil {
-		p.client.Topic(p.topic).Publish(context.Background(), psMsg)
+		topic := p.client.Topic(p.topic)
+		topic.EnableMessageOrdering = true
+		topic.Publish(context.Background(), psMsg)
 	}
 }
 
