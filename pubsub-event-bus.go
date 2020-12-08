@@ -54,10 +54,11 @@ func (p *pubsubBus) PublishEvent(message ycq.EventMessage) {
 	p.internalBus.PublishEvent(message)
 	psMsg, err := toPubsubMessage(message)
 	if err != nil {
-		topic := p.client.Topic(p.topic)
-		topic.EnableMessageOrdering = true
-		topic.Publish(context.Background(), psMsg)
+		return
 	}
+	topic := p.client.Topic(p.topic)
+	topic.EnableMessageOrdering = true
+	topic.Publish(context.Background(), psMsg)
 }
 
 func (p *pubsubBus) AddHandler(handler ycq.EventHandler, i ...interface{}) {
