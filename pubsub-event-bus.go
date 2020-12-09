@@ -75,5 +75,7 @@ func (p *pubsubBus) PublishEvent(message ycq.EventMessage) {
 }
 
 func (p *pubsubBus) AddHandler(handler ycq.EventHandler, i ...interface{}) {
-	p.internalBus.AddHandler(handler, i)
+	for _, event := range i {
+		p.internalBus.AddHandler(handler, event)
+	}
 }
