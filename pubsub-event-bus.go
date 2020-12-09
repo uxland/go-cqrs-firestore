@@ -40,13 +40,20 @@ func toPubsubMessage(message ycq.EventMessage) (*pubsub.Message, error) {
 		Headers:       message.GetHeaders(),
 		Version:       *message.Version(),
 	}
+	orderingKey := message.AggregateID()
+	headers := message.GetHeaders()
+	if headers != nil {
+		if key := headers["orderingKey"]; key != nil {
+			orderingKey = key.(string)
+		}
+	}
 	buffer, err := json.Marshal(psMsg)
 	if err != nil {
 		return nil, err
 	}
 	return &pubsub.Message{
 		Data:        buffer,
-		OrderingKey: message.AggregateID(),
+		OrderingKey: orderingKey,
 	}, nil
 }
 
