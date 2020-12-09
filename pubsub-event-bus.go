@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	ycq "github.com/jetbasrawi/go.cqrs"
 	"google.golang.org/api/option"
+	"log"
 	"reflect"
 )
 
@@ -16,7 +17,7 @@ type pubsubBus struct {
 }
 
 func NewPubsubEventBus(projectID, topic string) ycq.EventBus {
-	client, err := pubsub.NewClient(context.Background(), projectID, option.WithEndpoint("europe-west3-pubsub.googleapis.com"))
+	client, err := pubsub.NewClient(context.Background(), projectID, option.WithEndpoint("europe-west3-pubsub.googleapis.com:443"))
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +67,13 @@ func (p *pubsubBus) PublishEvent(message ycq.EventMessage) {
 	}
 	topic := p.client.Topic(p.topic)
 	topic.EnableMessageOrdering = true
-	topic.Publish(context.Background(), psMsg)
+	publish := topic.Publish(context.Background(), psMsg)
+	id, err := publish.Get(context.Background())
+	if err != nil {
+		log.Printf("error publishing event %s \n", err.Error())
+	} else {
+		log.Printf("event with id %s published\n", id)
+	}
 }
 
 func (p *pubsubBus) AddHandler(handler ycq.EventHandler, i ...interface{}) {
