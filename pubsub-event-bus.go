@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	ycq "github.com/jetbasrawi/go.cqrs"
+	"google.golang.org/api/option"
 	"reflect"
 )
 
@@ -15,7 +16,7 @@ type pubsubBus struct {
 }
 
 func NewPubsubEventBus(projectID, topic string) ycq.EventBus {
-	client, err := pubsub.NewClient(context.Background(), projectID)
+	client, err := pubsub.NewClient(context.Background(), projectID, option.WithEndpoint("europe-west3-pubsub.googleapis.com"))
 	if err != nil {
 		panic(err)
 	}
