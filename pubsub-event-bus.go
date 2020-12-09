@@ -68,11 +68,9 @@ func (p *pubsubBus) PublishEvent(message ycq.EventMessage) {
 	topic := p.client.Topic(p.topic)
 	topic.EnableMessageOrdering = true
 	publish := topic.Publish(context.Background(), psMsg)
-	id, err := publish.Get(context.Background())
+	_, err = publish.Get(context.Background())
 	if err != nil {
 		log.Printf("error publishing event %s \n", err.Error())
-	} else {
-		log.Printf("event with id %s published\n", id)
 	}
 }
 
