@@ -21,6 +21,7 @@ func NewPubsubEventBus(projectID, topic string) ycq.EventBus {
 	if err != nil {
 		panic(err)
 	}
+	log.Printf("creating pub sub event bus on project %s for topic %s\n", projectID, topic)
 	return &pubsubBus{internalBus: ycq.NewInternalEventBus(), client: client, topic: topic}
 }
 
@@ -65,12 +66,15 @@ func (p *pubsubBus) PublishEvent(message ycq.EventMessage) {
 	if err != nil {
 		return
 	}
+	log.Printf("publishing message to topic %s\n", p.topic)
 	topic := p.client.Topic(p.topic)
 	topic.EnableMessageOrdering = true
 	publish := topic.Publish(context.Background(), psMsg)
-	_, err = publish.Get(context.Background())
+	serverID, err := publish.Get(context.Background())
 	if err != nil {
 		log.Printf("error publishing event %s \n", err.Error())
+	} else {
+		log.Printf("msg with serverID: %s published\n", serverID)
 	}
 }
 
