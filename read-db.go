@@ -11,6 +11,7 @@ type GenericReadDB interface {
 	LoadAllItems() (interface{}, error)
 	LoadItem(id string) (interface{}, error)
 	DeleteItem(transaction *firestore.Transaction, id string) error
+	UpdateItem(transaction *firestore.Transaction, id string, updates []firestore.Update) error
 }
 type genericDBImpl struct {
 	collectionName string
@@ -31,6 +32,12 @@ func (g *genericDBImpl) SaveItem(transaction *firestore.Transaction, id string, 
 	collection := g.client.Collection(g.collectionName)
 	docRef := collection.Doc(id)
 	return transaction.Set(docRef, item)
+}
+
+func (g *genericDBImpl) UpdateItem(transaction *firestore.Transaction, id string, updates []firestore.Update) error {
+	collection := g.client.Collection(g.collectionName)
+	docRef := collection.Doc(id)
+	return transaction.Update(docRef, updates)
 }
 
 func (g *genericDBImpl) LoadAllItems() (interface{}, error) {
