@@ -1,30 +1,23 @@
-package go_cqrs_firestore
+package firestore
 
 import (
 	"cloud.google.com/go/firestore"
 	"context"
+	"github.com/uxland/go-cqrs-firestore/shared"
 	"time"
 )
-
-const leasingCollectionName = "leasing"
-
-type LeasingService interface {
-	GetLease(resourceID string, duration time.Duration) (Lease, error)
-}
-type Lease interface {
-	Lock() (bool, error)
-	Release() (bool, error)
-}
 
 type service struct {
 	client *firestore.Client
 }
 
-func NewService(client *firestore.Client) LeasingService {
+const leasingCollectionName = "leasing"
+
+func NewService(client *firestore.Client) shared.LeasingService {
 	return &service{client: client}
 }
 
-func (srvc *service) GetLease(resourceID string, duration time.Duration) (Lease, error) {
+func (srvc *service) GetLease(resourceID string, duration time.Duration) (shared.Lease, error) {
 	ctx := context.Background()
 	var lease *firestoreLease
 	err := srvc.client.RunTransaction(ctx, func(ctx context.Context, transaction *firestore.Transaction) error {

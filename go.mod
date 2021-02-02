@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	cloud.google.com/go v0.73.0 // indirect
+	cloud.google.com/go/datastore v1.1.0
 	cloud.google.com/go/firestore v1.4.0
 	cloud.google.com/go/pubsub v1.9.0
 	github.com/google/uuid v1.1.2

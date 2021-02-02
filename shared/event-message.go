@@ -1,4 +1,4 @@
-package go_cqrs_firestore
+package shared
 
 import ycq "github.com/jetbasrawi/go.cqrs"
 
