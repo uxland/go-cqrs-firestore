@@ -14,6 +14,10 @@ type readDB struct {
 	client      *datastore.Client
 }
 
+func NewGenericDBImpl(kind string, itemFactory func() interface{}, client *datastore.Client) shared.GenericReadDB {
+	return &readDB{kind, itemFactory, client}
+}
+
 func (db *readDB) SaveItem(tx interface{}, id string, item interface{}) error {
 	transaction := tx.(*datastore.Transaction)
 	key := datastore.NameKey(db.kind, id, nil)
