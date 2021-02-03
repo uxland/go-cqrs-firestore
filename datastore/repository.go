@@ -89,7 +89,7 @@ type eventDocument struct {
 	AggregateID   string      `datastore:"aggregateID"`
 	AggregateType string      `datastore:"aggregateType"`
 	Event         interface{} `datastore:"event"`
-	Version       *int        `datastore:"version"`
+	Version       int         `datastore:"version"`
 	EventType     string      `datastore:"version"`
 }
 
@@ -119,7 +119,7 @@ func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, e
 		if err != nil {
 			return nil, err
 		}
-		msg := ycq.NewEventMessage(id, event, doc.Version)
+		msg := ycq.NewEventMessage(id, event, &doc.Version)
 		result = append(result, msg)
 	}
 	return result, nil
@@ -155,7 +155,7 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 			AggregateType: r.aggregateType,
 			Event:         message.Event(),
 			EventType:     message.EventType(),
-			Version:       message.Version(),
+			Version:       *message.Version(),
 		}
 		key := datastore.NameKey(eventsKind, id, nil)
 		_, err = transaction.Put(key, props)
