@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"github.com/uxland/go-cqrs-firestore/shared"
 	"google.golang.org/api/iterator"
+	"reflect"
 )
 
 type readDB struct {
 	kind        string
-	itemFactory func() interface{}
+	itemFactory func() reflect.Type
 	client      *datastore.Client
 }
 
-func NewGenericDBImpl(kind string, itemFactory func() interface{}, client *datastore.Client) shared.GenericReadDB {
+func NewGenericDBImpl(kind string, itemFactory func() reflect.Type, client *datastore.Client) shared.GenericReadDB {
 	return &readDB{kind, itemFactory, client}
 }
 
@@ -25,8 +26,8 @@ func (db *readDB) SaveItem(tx interface{}, id string, item interface{}) error {
 	return err
 }
 
-func (db *readDB) readIterator(it *datastore.Iterator) (interface{}, error) {
-	docs := make([]interface{}, 0)
+func (db *readDB) readIterator(it *datastore.Iterator) ([]reflect.Type, error) {
+	docs := make([]reflect.Type, 0)
 	for {
 		item := db.itemFactory()
 		_, err := it.Next(item)
@@ -34,14 +35,14 @@ func (db *readDB) readIterator(it *datastore.Iterator) (interface{}, error) {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return docs, err
 		}
 		docs = append(docs, item)
 	}
 	return docs, nil
 }
 
-func (db *readDB) LoadAllItems() (interface{}, error) {
+func (db *readDB) LoadAllItems() ([]reflect.Type, error) {
 	query := datastore.NewQuery(db.kind).
 		Limit(1000)
 	it := db.client.Run(context.Background(), query)
@@ -68,7 +69,7 @@ func (db *readDB) UpdateItem(transaction interface{}, id string, updates interfa
 	panic("implement me")
 }
 
-func (db *readDB) ListItems(filter []shared.Filter, limit int) (interface{}, error) {
+func (db *readDB) ListItems(filter []shared.Filter, limit int) ([]reflect.Type, error) {
 	query := datastore.NewQuery(db.kind)
 	for _, s := range filter {
 		op := s.Op
