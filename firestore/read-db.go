@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/uxland/go-cqrs-firestore/shared"
 	"google.golang.org/api/iterator"
-	"reflect"
 )
 
 type genericDBImpl struct {
@@ -26,7 +25,7 @@ func (g *genericDBImpl) SaveItem(transaction interface{}, id string, item interf
 	return tx.Set(docRef, item)
 }
 
-func (g *genericDBImpl) LoadAllItems() ([]reflect.Type, error) {
+func (g *genericDBImpl) LoadAllItems() ([]interface{}, error) {
 	collection := g.client.Collection(g.collectionName)
 	documentIterator := collection.Limit(1000).Documents(context.Background())
 	return g.readIterator(documentIterator)
@@ -58,7 +57,7 @@ func (g *genericDBImpl) UpdateItem(transaction interface{}, id string, updates i
 	return tx.Update(docRef, updates.([]firestore.Update))
 }
 
-func (g *genericDBImpl) ListItems(filter []shared.Filter, limit int) ([]reflect.Type, error) {
+func (g *genericDBImpl) ListItems(filter []shared.Filter, limit int) ([]interface{}, error) {
 	col := g.client.Collection(g.collectionName)
 	if limit == 0 {
 		limit = 100
@@ -72,7 +71,7 @@ func (g *genericDBImpl) ListItems(filter []shared.Filter, limit int) ([]reflect.
 	return g.readIterator(documentIterator)
 }
 
-func (g *genericDBImpl) readIterator(documentIterator *firestore.DocumentIterator) ([]reflect.Type, error) {
+func (g *genericDBImpl) readIterator(documentIterator *firestore.DocumentIterator) ([]interface{}, error) {
 	docs := g.sliceFactory()
 	for {
 		doc, err := documentIterator.Next()
