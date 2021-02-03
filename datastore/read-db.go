@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/uxland/go-cqrs-firestore/shared"
 	"google.golang.org/api/iterator"
-	"reflect"
 )
 
 type readDB struct {
@@ -70,7 +69,7 @@ func (db *readDB) UpdateItem(transaction interface{}, id string, updates interfa
 	panic("implement me")
 }
 
-func (db *readDB) ListItems(filter []shared.Filter, limit int) ([]reflect.Type, error) {
+func (db *readDB) ListItems(filter []shared.Filter, limit int) ([]interface{}, error) {
 	query := datastore.NewQuery(db.kind)
 	for _, s := range filter {
 		op := s.Op
