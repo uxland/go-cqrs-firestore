@@ -71,8 +71,13 @@ func (db *readDB) UpdateItem(transaction interface{}, id string, updates interfa
 func (db *readDB) ListItems(filter []shared.Filter, limit int) (interface{}, error) {
 	query := datastore.NewQuery(db.kind)
 	for _, s := range filter {
-		query = query.Filter(fmt.Sprintf("%s %s", s.Path, s.Op), s.Value)
+		op := s.Op
+		if op == "==" {
+			op = "="
+		}
+		query = query.Filter(fmt.Sprintf("%s %s", s.Path, op), s.Value)
 	}
+	query = query.Limit(limit)
 	it := db.client.Run(context.Background(), query)
 	return db.readIterator(it)
 }
