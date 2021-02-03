@@ -86,12 +86,11 @@ func (r *repo) AcceptChanges() {
 }
 
 type eventDocument struct {
-	AggregateID   string            `datastore:"aggregateID"`
-	AggregateType string            `datastore:"aggregateType"`
-	Event         interface{}       `datastore:"event"`
-	Headers       map[string]string `datastore:"headers"`
-	Version       *int              `datastore:"version"`
-	EventType     string            `datastore:"version"`
+	AggregateID   string      `datastore:"aggregateID"`
+	AggregateType string      `datastore:"aggregateType"`
+	Event         interface{} `datastore:"event"`
+	Version       *int        `datastore:"version"`
+	EventType     string      `datastore:"version"`
 }
 
 func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, error) {
@@ -121,10 +120,7 @@ func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, e
 			return nil, err
 		}
 		msg := ycq.NewEventMessage(id, event, doc.Version)
-		for k, h := range doc.Headers {
-			msg.SetHeader(k, h)
-		}
-		result = append(result, ycq.NewEventMessage(id, event, doc.Version))
+		result = append(result, msg)
 	}
 	return result, nil
 
@@ -159,7 +155,6 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 			AggregateType: r.aggregateType,
 			Event:         message.Event(),
 			EventType:     message.EventType(),
-			Headers:       toStringMap(message.GetHeaders()),
 			Version:       message.Version(),
 		}
 		key := datastore.NameKey(eventsKind, id, nil)
@@ -170,17 +165,4 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 		r.bus.PublishEvent(message)
 	}
 	return nil
-}
-
-func toStringMap(from map[string]interface{}) map[string]string {
-	res := make(map[string]string)
-	for s, i := range from {
-		bytes, err := json.Marshal(i)
-		if err != nil {
-			continue
-		}
-		val := string(bytes)
-		res[s] = val
-	}
-	return res
 }
