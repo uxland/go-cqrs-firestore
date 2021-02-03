@@ -176,7 +176,7 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 func toStringMap(from map[string]interface{}) map[string]string {
 	res := make(map[string]string)
 	for s, i := range from {
-		val := fmt.Sprint(i)
+		val := fmt.Sprintf("%#v", i)
 		res[s] = val
 	}
 	return res
