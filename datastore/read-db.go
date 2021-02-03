@@ -10,13 +10,14 @@ import (
 )
 
 type readDB struct {
-	kind        string
-	itemFactory func() reflect.Type
-	client      *datastore.Client
+	kind         string
+	itemFactory  shared.ItemFactory
+	sliceFactory shared.SliceFactory
+	client       *datastore.Client
 }
 
-func NewGenericDBImpl(kind string, itemFactory func() reflect.Type, client *datastore.Client) shared.GenericReadDB {
-	return &readDB{kind, itemFactory, client}
+func NewGenericDBImpl(kind string, itemFactory shared.ItemFactory, sliceFactory shared.SliceFactory, client *datastore.Client) shared.GenericReadDB {
+	return &readDB{kind, itemFactory, sliceFactory, client}
 }
 
 func (db *readDB) SaveItem(tx interface{}, id string, item interface{}) error {
@@ -27,7 +28,7 @@ func (db *readDB) SaveItem(tx interface{}, id string, item interface{}) error {
 }
 
 func (db *readDB) readIterator(it *datastore.Iterator) ([]reflect.Type, error) {
-	docs := make([]reflect.Type, 0)
+	docs := db.sliceFactory()
 	for {
 		item := db.itemFactory()
 		_, err := it.Next(item)

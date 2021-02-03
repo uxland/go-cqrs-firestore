@@ -7,6 +7,10 @@ type Filter struct {
 	Op    string
 	Value interface{}
 }
+
+type ItemFactory func() reflect.Type
+type SliceFactory func() []reflect.Type
+
 type GenericReadDB interface {
 	SaveItem(transaction interface{}, id string, item interface{}) error
 	LoadAllItems() ([]reflect.Type, error)

@@ -10,12 +10,13 @@ import (
 
 type genericDBImpl struct {
 	collectionName string
-	itemFactory    func() reflect.Type
+	itemFactory    shared.ItemFactory
+	sliceFactory   shared.SliceFactory
 	client         *firestore.Client
 }
 
-func NewGenericDBImpl(collectionName string, itemFactory func() reflect.Type, client *firestore.Client) shared.GenericReadDB {
-	return &genericDBImpl{collectionName: collectionName, itemFactory: itemFactory, client: client}
+func NewGenericDBImpl(collectionName string, itemFactory shared.ItemFactory, sliceFactory shared.SliceFactory, client *firestore.Client) shared.GenericReadDB {
+	return &genericDBImpl{collectionName: collectionName, itemFactory: itemFactory, sliceFactory: sliceFactory, client: client}
 }
 
 func (g *genericDBImpl) SaveItem(transaction interface{}, id string, item interface{}) error {
@@ -72,7 +73,7 @@ func (g *genericDBImpl) ListItems(filter []shared.Filter, limit int) ([]reflect.
 }
 
 func (g *genericDBImpl) readIterator(documentIterator *firestore.DocumentIterator) ([]reflect.Type, error) {
-	docs := make([]reflect.Type, 0)
+	docs := g.sliceFactory()
 	for {
 		doc, err := documentIterator.Next()
 		if err == iterator.Done {
