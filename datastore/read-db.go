@@ -27,7 +27,7 @@ func (db *readDB) SaveItem(tx interface{}, id string, item interface{}) error {
 	return err
 }
 
-func (db *readDB) readIterator(it *datastore.Iterator) ([]reflect.Type, error) {
+func (db *readDB) readIterator(it *datastore.Iterator) ([]interface{}, error) {
 	docs := db.sliceFactory()
 	for {
 		item := db.itemFactory()
@@ -43,7 +43,7 @@ func (db *readDB) readIterator(it *datastore.Iterator) ([]reflect.Type, error) {
 	return docs, nil
 }
 
-func (db *readDB) LoadAllItems() ([]reflect.Type, error) {
+func (db *readDB) LoadAllItems() ([]interface{}, error) {
 	query := datastore.NewQuery(db.kind).
 		Limit(1000)
 	it := db.client.Run(context.Background(), query)
