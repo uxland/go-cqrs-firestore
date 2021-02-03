@@ -7,7 +7,6 @@ type Filter struct {
 }
 
 type ItemFactory func() interface{}
-type SliceFactory func() []interface{}
 
 type GenericReadDB interface {
 	SaveItem(transaction interface{}, id string, item interface{}) error
