@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	ycq "github.com/jetbasrawi/go.cqrs"
 	"github.com/uxland/go-cqrs-firestore/shared"
-	"golang.org/x/tools/go/ssa/interp/testdata/src/fmt"
 	"google.golang.org/api/iterator"
 )
 
@@ -176,7 +175,11 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 func toStringMap(from map[string]interface{}) map[string]string {
 	res := make(map[string]string)
 	for s, i := range from {
-		val := fmt.Sprintf("%#v", i)
+		bytes, err := json.Marshal(i)
+		if err != nil {
+			continue
+		}
+		val := string(bytes)
 		res[s] = val
 	}
 	return res
