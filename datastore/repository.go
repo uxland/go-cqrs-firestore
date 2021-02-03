@@ -36,7 +36,22 @@ func NewRepository(aggregateType string, constructor func(id string) ycq.Aggrega
 }
 
 func (r *repo) Load(id string) (ycq.AggregateRoot, error) {
-	panic("implement me")
+	var aggregate ycq.AggregateRoot
+	if aggregate = r.cache[id]; aggregate != nil {
+		return aggregate, nil
+	}
+	aggregate = r.constructor(id)
+	ctx := context.Background()
+	messages, err := r.loadEvents(ctx, aggregate.AggregateID())
+	if err != nil {
+		return nil, err
+	}
+	for _, message := range messages {
+		aggregate.Apply(message, false)
+		aggregate.IncrementVersion()
+	}
+	r.cache[id] = aggregate
+	return aggregate, nil
 }
 
 func (r *repo) Save(aggregate ycq.AggregateRoot, expectedVersion *int) error {
