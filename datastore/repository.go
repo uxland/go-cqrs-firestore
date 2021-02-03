@@ -90,7 +90,7 @@ type eventDocument struct {
 	AggregateType string      `datastore:"aggregateType"`
 	Event         interface{} `datastore:"event"`
 	Version       int         `datastore:"version"`
-	EventType     string      `datastore:"version"`
+	EventType     string      `datastore:"eventType"`
 }
 
 func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, error) {
