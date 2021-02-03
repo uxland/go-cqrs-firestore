@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	ycq "github.com/jetbasrawi/go.cqrs"
 	"github.com/uxland/go-cqrs-firestore/shared"
+	"golang.org/x/tools/go/ssa/interp/testdata/src/fmt"
 	"google.golang.org/api/iterator"
 )
 
@@ -86,12 +87,12 @@ func (r *repo) AcceptChanges() {
 }
 
 type eventDocument struct {
-	AggregateID   string                 `datastore:"aggregateID"`
-	AggregateType string                 `datastore:"aggregateType"`
-	Event         interface{}            `datastore:"event"`
-	Headers       map[string]interface{} `datastore:"headers"`
-	Version       *int                   `datastore:"version"`
-	EventType     string                 `datastore:"version"`
+	AggregateID   string            `datastore:"aggregateID"`
+	AggregateType string            `datastore:"aggregateType"`
+	Event         interface{}       `datastore:"event"`
+	Headers       map[string]string `datastore:"headers"`
+	Version       *int              `datastore:"version"`
+	EventType     string            `datastore:"version"`
 }
 
 func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, error) {
@@ -119,6 +120,10 @@ func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, e
 		err = json.Unmarshal(bytes, event)
 		if err != nil {
 			return nil, err
+		}
+		msg := ycq.NewEventMessage(id, event, doc.Version)
+		for k, h := range doc.Headers {
+			msg.SetHeader(k, h)
 		}
 		result = append(result, ycq.NewEventMessage(id, event, doc.Version))
 	}
@@ -155,7 +160,7 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 			AggregateType: r.aggregateType,
 			Event:         message.Event(),
 			EventType:     message.EventType(),
-			Headers:       message.GetHeaders(),
+			Headers:       toStringMap(message.GetHeaders()),
 			Version:       message.Version(),
 		}
 		key := datastore.NameKey(eventsKind, id, nil)
@@ -166,4 +171,13 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 		r.bus.PublishEvent(message)
 	}
 	return nil
+}
+
+func toStringMap(from map[string]interface{}) map[string]string {
+	res := make(map[string]string)
+	for s, i := range from {
+		val := fmt.Sprint(i)
+		res[s] = val
+	}
+	return res
 }
