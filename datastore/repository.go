@@ -3,7 +3,6 @@ package datastore
 import (
 	"cloud.google.com/go/datastore"
 	"context"
-	"encoding/json"
 	"errors"
 	"github.com/google/uuid"
 	ycq "github.com/jetbasrawi/go.cqrs"
@@ -114,12 +113,9 @@ func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, e
 		if err != nil {
 			return nil, err
 		}
-		bytes, err := json.Marshal(doc.Event)
-		if err != nil {
-			return nil, err
-		}
 		event := r.EventFactory.GetEvent(doc.EventType)
-		err = json.Unmarshal(bytes, event)
+		entity := doc.Event.(datastore.Entity)
+		err = datastore.LoadStruct(event, entity.Properties)
 		if err != nil {
 			return nil, err
 		}
