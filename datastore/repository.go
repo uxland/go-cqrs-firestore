@@ -114,7 +114,7 @@ func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, e
 			return nil, err
 		}
 		event := r.EventFactory.GetEvent(doc.EventType)
-		entity := doc.Event.(datastore.Entity)
+		entity := doc.Event.(*datastore.Entity)
 		err = datastore.LoadStruct(event, entity.Properties)
 		if err != nil {
 			return nil, err
