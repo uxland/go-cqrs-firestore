@@ -10,7 +10,7 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-const collectionName = "events"
+//const collectionName = "events"
 
 type eventDocument struct {
 	AggregateID   string            `firestore:"aggregateID"`
@@ -20,32 +20,39 @@ type eventDocument struct {
 	Version       *int              `firestore:"version"`
 }
 
-type repo struct {
-	aggregateType string
-	constructor   func(id string) ycq.AggregateRoot
-	cache         map[string]ycq.AggregateRoot
-	toSave        map[string]*int
-	eventFactory  ycq.EventFactory
-	bus           ycq.EventBus
-	client        *firestore.Client
+type repositorySettings struct {
+	AggregateType        string
+	AggregateFactory     func(id string) ycq.AggregateRoot
+	EventFactory         ycq.EventFactory
+	Bus                  ycq.EventBus
+	Client               *firestore.Client
+	EventsCollectionName string
 }
 
-func NewRepository(aggregateType string, constructor func(id string) ycq.AggregateRoot, factory ycq.EventFactory, bus ycq.EventBus, client *firestore.Client) shared.Repository {
+type repo struct {
+	cache  map[string]ycq.AggregateRoot
+	toSave map[string]*int
+	repositorySettings
+}
+
+const defaultCollectionName = "events"
+
+func NewRepository(settings repositorySettings) shared.Repository {
+
+	if settings.EventsCollectionName == "" {
+		settings.EventsCollectionName = defaultCollectionName
+	}
 	return &repo{
-		aggregateType: aggregateType,
-		constructor:   constructor,
-		cache:         make(map[string]ycq.AggregateRoot),
-		toSave:        make(map[string]*int),
-		eventFactory:  factory,
-		bus:           bus,
-		client:        client,
+		cache:              make(map[string]ycq.AggregateRoot),
+		toSave:             make(map[string]*int),
+		repositorySettings: settings,
 	}
 }
 
 func (r *repo) loadEvents(collection *firestore.CollectionRef, ctx context.Context, id string) ([]ycq.EventMessage, error) {
 	iter := collection.
 		Where("aggregateID", "==", id).
-		Where("aggregateType", "==", r.aggregateType).
+		Where("aggregateType", "==", r.AggregateType).
 		OrderBy("version", firestore.Asc).
 		Documents(ctx)
 	result := make([]ycq.EventMessage, 0)
@@ -61,7 +68,7 @@ func (r *repo) loadEvents(collection *firestore.CollectionRef, ctx context.Conte
 		if err != nil {
 			return nil, err
 		}
-		event := r.eventFactory.GetEvent(eventType.(string))
+		event := r.EventFactory.GetEvent(eventType.(string))
 		message := &eventDocument{Event: event}
 		err = doc.DataTo(message)
 
@@ -93,9 +100,9 @@ func (r *repo) Load(id string) (ycq.AggregateRoot, error) {
 	if aggregate = r.cache[id]; aggregate != nil {
 		return aggregate, nil
 	}
-	aggregate = r.constructor(id)
+	aggregate = r.AggregateFactory(id)
 	ctx := context.Background()
-	collection := r.client.Collection(collectionName)
+	collection := r.Client.Collection(r.EventsCollectionName)
 	messages, err := r.loadEvents(collection, ctx, aggregate.AggregateID())
 	if err != nil {
 		return nil, err
@@ -109,7 +116,7 @@ func (r *repo) Load(id string) (ycq.AggregateRoot, error) {
 }
 
 func (r *repo) save(transaction *firestore.Transaction, ctx context.Context, aggregate ycq.AggregateRoot, expectedVersion *int) error {
-	collection := r.client.Collection(collectionName)
+	collection := r.Client.Collection(r.EventsCollectionName)
 
 	err := r.assertExpectedVersion(collection, ctx, aggregate.AggregateID(), *expectedVersion)
 	if err != nil {
@@ -121,7 +128,7 @@ func (r *repo) save(transaction *firestore.Transaction, ctx context.Context, agg
 		docRef := collection.Doc(id)
 		props := map[string]interface{}{
 			"aggregateID":   message.AggregateID(),
-			"aggregateType": r.aggregateType,
+			"aggregateType": r.AggregateType,
 			"event":         message.Event(),
 			"eventType":     message.EventType(),
 			"headers":       message.GetHeaders(),
@@ -131,7 +138,7 @@ func (r *repo) save(transaction *firestore.Transaction, ctx context.Context, agg
 		if err != nil {
 			return err
 		}
-		r.bus.PublishEvent(message)
+		r.Bus.PublishEvent(message)
 	}
 	return nil
 }

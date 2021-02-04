@@ -10,11 +10,26 @@ type unitOfWork struct {
 	*shared.BaseGenericUnitOfWork
 }
 
-func NewGenericUoW(aggregates []shared.AggregateDefinition, factory ycq.EventFactory, bus ycq.EventBus, client *firestore.Client) shared.GenericUnitOfWork {
+type UoWSettings struct {
+	Aggregates           []shared.AggregateDefinition
+	Factory              ycq.EventFactory
+	Bus                  ycq.EventBus
+	Client               *firestore.Client
+	EventsCollectionName string
+}
+
+func NewGenericUoW(settings UoWSettings) shared.GenericUnitOfWork {
 	uow := shared.NewBaseGenericUnitOfWork()
-	for _, aggregateDefinition := range aggregates {
-		aggregateType := aggregateDefinition.Type.String()
-		uow.Repos[aggregateType] = NewRepository(aggregateType, aggregateDefinition.Constructor, factory, bus, client)
+	for _, aggregateDefinition := range settings.Aggregates {
+		rs := repositorySettings{
+			AggregateType:        aggregateDefinition.Type.String(),
+			AggregateFactory:     aggregateDefinition.Constructor,
+			EventFactory:         settings.Factory,
+			Bus:                  settings.Bus,
+			Client:               settings.Client,
+			EventsCollectionName: settings.EventsCollectionName,
+		}
+		uow.Repos[rs.AggregateType] = NewRepository(rs)
 	}
 	return uow
 }

@@ -9,29 +9,33 @@ import (
 	ycq "github.com/jetbasrawi/go.cqrs"
 	"github.com/uxland/go-cqrs-firestore/shared"
 	"google.golang.org/api/iterator"
+	"reflect"
 )
 
 type repo struct {
-	aggregateType string
-	constructor   func(id string) ycq.AggregateRoot
-	cache         map[string]ycq.AggregateRoot
-	toSave        map[string]*int
-	eventFactory  ycq.EventFactory
-	bus           ycq.EventBus
-	client        *datastore.Client
+	cache  map[string]ycq.AggregateRoot
+	toSave map[string]*int
+	repositorySettings
 }
 
-const eventsKind = "event"
+type repositorySettings struct {
+	AggregateType    string
+	AggregateFactory func(id string) ycq.AggregateRoot
+	EventFactory     ycq.EventFactory
+	Bus              ycq.EventBus
+	Client           *datastore.Client
+	EventsKind       string
+}
 
-func NewRepository(aggregateType string, constructor func(id string) ycq.AggregateRoot, factory ycq.EventFactory, bus ycq.EventBus, client *datastore.Client) shared.Repository {
+func NewRepository(settings repositorySettings) shared.Repository {
+	const defaultEventsKind = "event"
+	if reflect.ValueOf(settings).FieldByName("EventsKind").IsZero() {
+		settings.EventsKind = defaultEventsKind
+	}
 	return &repo{
-		aggregateType: aggregateType,
-		constructor:   constructor,
-		cache:         make(map[string]ycq.AggregateRoot),
-		toSave:        make(map[string]*int),
-		eventFactory:  factory,
-		bus:           bus,
-		client:        client,
+		cache:              make(map[string]ycq.AggregateRoot),
+		toSave:             make(map[string]*int),
+		repositorySettings: settings,
 	}
 }
 
@@ -40,7 +44,7 @@ func (r *repo) Load(id string) (ycq.AggregateRoot, error) {
 	if aggregate = r.cache[id]; aggregate != nil {
 		return aggregate, nil
 	}
-	aggregate = r.constructor(id)
+	aggregate = r.AggregateFactory(id)
 	ctx := context.Background()
 	messages, err := r.loadEvents(ctx, aggregate.AggregateID())
 	if err != nil {
@@ -88,17 +92,17 @@ func (r *repo) AcceptChanges() {
 type eventDocument struct {
 	AggregateID   string      `datastore:"aggregateID"`
 	AggregateType string      `datastore:"aggregateType"`
-	Event         interface{} `datastore:"event"`
+	Event         interface{} `datastore:"event,noindex"`
 	Version       int         `datastore:"version"`
 	EventType     string      `datastore:"eventType"`
 }
 
 func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, error) {
-	query := datastore.NewQuery(eventsKind).
+	query := datastore.NewQuery(r.EventsKind).
 		Filter("aggregateID=", id).
-		Filter("aggregateType=", r.aggregateType).
+		Filter("aggregateType=", r.AggregateType).
 		Order("version")
-	it := r.client.Run(ctx, query)
+	it := r.Client.Run(ctx, query)
 	result := make([]ycq.EventMessage, 0)
 
 	for {
@@ -114,7 +118,7 @@ func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, e
 		if err != nil {
 			return nil, err
 		}
-		event := r.eventFactory.GetEvent(doc.EventType)
+		event := r.EventFactory.GetEvent(doc.EventType)
 		err = json.Unmarshal(bytes, event)
 		if err != nil {
 			return nil, err
@@ -152,17 +156,17 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 		id := uuid.New().String()
 		props := &eventDocument{
 			AggregateID:   message.AggregateID(),
-			AggregateType: r.aggregateType,
+			AggregateType: r.AggregateType,
 			Event:         message.Event(),
 			EventType:     message.EventType(),
 			Version:       *message.Version(),
 		}
-		key := datastore.NameKey(eventsKind, id, nil)
+		key := datastore.NameKey(r.EventsKind, id, nil)
 		_, err = transaction.Put(key, props)
 		if err != nil {
 			return err
 		}
-		r.bus.PublishEvent(message)
+		r.Bus.PublishEvent(message)
 	}
 	return nil
 }
