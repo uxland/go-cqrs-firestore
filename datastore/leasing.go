@@ -21,6 +21,10 @@ type service struct {
 	client *datastore.Client
 }
 
+func NewLeasingService(client *datastore.Client) shared.LeasingService {
+	return &service{client: client}
+}
+
 func (s *service) lock(lease *datastoreLease) error {
 	lease.Locked = true
 	key := datastore.NameKey(leasingKind, lease.id, nil)

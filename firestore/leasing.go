@@ -13,7 +13,7 @@ type service struct {
 
 const leasingCollectionName = "leasing"
 
-func NewService(client *firestore.Client) shared.LeasingService {
+func NewLeasingService(client *firestore.Client) shared.LeasingService {
 	return &service{client: client}
 }
 
