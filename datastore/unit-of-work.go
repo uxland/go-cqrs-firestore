@@ -16,6 +16,7 @@ type UoWSettings struct {
 	Bus        ycq.EventBus
 	Client     *datastore.Client
 	EventKind  string
+	Namespace  string
 }
 
 func NewGenericUoW(settings UoWSettings) shared.GenericUnitOfWork {
@@ -28,6 +29,7 @@ func NewGenericUoW(settings UoWSettings) shared.GenericUnitOfWork {
 			Bus:              settings.Bus,
 			Client:           settings.Client,
 			EventsKind:       settings.EventKind,
+			Namespace:        settings.Namespace,
 		}
 		uow.Repos[rs.AggregateType] = NewRepository(rs)
 	}

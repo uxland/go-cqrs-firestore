@@ -24,6 +24,7 @@ type repositorySettings struct {
 	Bus              ycq.EventBus
 	Client           *datastore.Client
 	EventsKind       string
+	Namespace        string
 }
 
 func NewRepository(settings repositorySettings) shared.Repository {
@@ -97,7 +98,7 @@ type eventDocument struct {
 }
 
 func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, error) {
-	query := datastore.NewQuery(r.EventsKind).
+	query := r.createQuery().
 		Filter("aggregateID=", id).
 		Filter("aggregateType=", r.AggregateType).
 		Order("version")
@@ -157,7 +158,9 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 			EventType:     message.EventType(),
 			Version:       *message.Version(),
 		}
+
 		key := datastore.NameKey(r.EventsKind, id, nil)
+		key.Namespace = ""
 		_, err = transaction.Put(key, props)
 		if err != nil {
 			return err
@@ -165,4 +168,12 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 		r.Bus.PublishEvent(message)
 	}
 	return nil
+}
+
+func (r *repo) createQuery() *datastore.Query {
+	query := datastore.NewQuery(r.EventsKind)
+	if r.Namespace != "" {
+		query = query.Namespace(r.Namespace)
+	}
+	return query
 }

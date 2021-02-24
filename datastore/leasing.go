@@ -27,13 +27,13 @@ func NewLeasingService(client *datastore.Client) shared.LeasingService {
 
 func (s *service) lock(lease *datastoreLease) error {
 	lease.Locked = true
-	key := datastore.NameKey(leasingKind, lease.id, nil)
+	key := newKey("", leasingKind, lease.id, nil)
 	_, err := s.client.Put(context.Background(), key, lease)
 	return err
 }
 
 func (s *service) delete(id string) error {
-	key := datastore.NameKey(leasingKind, id, nil)
+	key := newKey("", leasingKind, id, nil)
 	return s.client.Delete(context.Background(), key)
 }
 
@@ -42,7 +42,7 @@ func (s *service) GetLease(resourceID string, duration time.Duration) (shared.Le
 	var lease *datastoreLease
 	_, err := s.client.RunInTransaction(ctx, func(tx *datastore.Transaction) error {
 		persisted := &datastoreLease{}
-		key := datastore.NameKey(leasingKind, resourceID, nil)
+		key := newKey("", leasingKind, resourceID, nil)
 		err := s.client.Get(ctx, key, persisted)
 		if err != nil && err != datastore.ErrNoSuchEntity {
 			return err

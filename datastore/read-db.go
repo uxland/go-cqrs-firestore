@@ -10,17 +10,19 @@ import (
 
 type readDB struct {
 	kind        string
+	namespace   string
 	itemFactory shared.ItemFactory
 	client      *datastore.Client
 }
 
-func NewGenericDBImpl(kind string, itemFactory shared.ItemFactory, client *datastore.Client) shared.GenericReadDB {
-	return &readDB{kind, itemFactory, client}
+func NewGenericDBImpl(kind, namespace string, itemFactory shared.ItemFactory, client *datastore.Client) shared.GenericReadDB {
+	return &readDB{kind, namespace, itemFactory, client}
 }
 
 func (db *readDB) SaveItem(tx interface{}, id string, item interface{}) error {
 	transaction := tx.(*datastore.Transaction)
-	key := datastore.NameKey(db.kind, id, nil)
+	key := newKey(db.namespace, db.kind, id, nil)
+	key.Namespace = db.namespace
 	_, err := transaction.Put(key, item)
 	return err
 }
@@ -42,14 +44,15 @@ func (db *readDB) readIterator(it *datastore.Iterator) ([]interface{}, error) {
 }
 
 func (db *readDB) LoadAllItems() ([]interface{}, error) {
-	query := datastore.NewQuery(db.kind).
+	query := db.createQuery().
 		Limit(1000)
 	it := db.client.Run(context.Background(), query)
 	return db.readIterator(it)
 }
 
 func (db *readDB) LoadItem(id string) (interface{}, error) {
-	key := datastore.NameKey(db.kind, id, nil)
+	key := newKey(db.namespace, db.kind, id, nil)
+	key.Namespace = db.namespace
 	item := db.itemFactory()
 	err := db.client.Get(context.Background(), key, item)
 	if err != nil {
@@ -60,7 +63,7 @@ func (db *readDB) LoadItem(id string) (interface{}, error) {
 
 func (db *readDB) DeleteItem(tx interface{}, id string) error {
 	transaction := tx.(*datastore.Transaction)
-	key := datastore.NameKey(db.kind, id, nil)
+	key := newKey(db.namespace, db.kind, id, nil)
 	return transaction.Delete(key)
 }
 
@@ -69,7 +72,7 @@ func (db *readDB) UpdateItem(transaction interface{}, id string, updates interfa
 }
 
 func (db *readDB) ListItems(filter []shared.Filter, limit int) ([]interface{}, error) {
-	query := datastore.NewQuery(db.kind)
+	query := db.createQuery()
 	for _, s := range filter {
 		op := s.Op
 		if op == "==" {
@@ -80,4 +83,12 @@ func (db *readDB) ListItems(filter []shared.Filter, limit int) ([]interface{}, e
 	query = query.Limit(limit)
 	it := db.client.Run(context.Background(), query)
 	return db.readIterator(it)
+}
+
+func (db *readDB) createQuery() *datastore.Query {
+	query := datastore.NewQuery(db.kind)
+	if db.namespace != "" {
+		query = query.Namespace(db.namespace)
+	}
+	return query
 }
