@@ -86,6 +86,7 @@ func (r *repo) AcceptChanges() {
 		}
 		aggregate.ClearChanges()
 	}
+	r.cache = make(map[string]ycq.AggregateRoot)
 	r.toSave = make(map[string]*int)
 }
 
@@ -159,7 +160,7 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 			Version:       *message.Version(),
 		}
 
-		key := datastore.NameKey(r.EventsKind, id, nil)
+		key := newKey(r.Namespace, r.EventsKind, id, nil)
 		key.Namespace = ""
 		_, err = transaction.Put(key, props)
 		if err != nil {

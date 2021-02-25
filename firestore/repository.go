@@ -170,5 +170,6 @@ func (r *repo) AcceptChanges() {
 		}
 		aggregate.ClearChanges()
 	}
+	r.cache = make(map[string]ycq.AggregateRoot)
 	r.toSave = make(map[string]*int)
 }
