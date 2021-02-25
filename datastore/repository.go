@@ -161,7 +161,6 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 		}
 
 		key := newKey(r.Namespace, r.EventsKind, id, nil)
-		key.Namespace = ""
 		_, err = transaction.Put(key, props)
 		if err != nil {
 			return err
