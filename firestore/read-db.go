@@ -65,7 +65,10 @@ func (g *genericDBImpl) ListItems(filter []shared.Filter, limit int) ([]interfac
 	for _, f := range filter {
 		q = q.Where(f.Path, f.Op, f.Value)
 	}
-	q = q.Limit(limit)
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+
 	documentIterator := q.Documents(context.Background())
 	return g.readIterator(documentIterator)
 }
