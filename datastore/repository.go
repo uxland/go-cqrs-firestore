@@ -124,7 +124,7 @@ func (e *eventDocument) Save() ([]datastore.Property, error) {
 		EventType:     e.EventType,
 	}
 	p, err := datastore.SaveStruct(aux)
-	p = append(p, datastore.Property{Name: "Event", NoIndex: true, Value: datastore.Entity{Properties: properties}})
+	p = append(p, datastore.Property{Name: "Event", NoIndex: true, Value: &datastore.Entity{Properties: properties}})
 	return p, nil
 }
 
