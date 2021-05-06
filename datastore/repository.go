@@ -98,6 +98,31 @@ type eventDocument struct {
 	EventType     string      `datastore:"eventType"`
 }
 
+func (e *eventDocument) Load(properties []datastore.Property) error {
+	return datastore.LoadStruct(e, properties)
+}
+
+func (e *eventDocument) Save() ([]datastore.Property, error) {
+	pls, ok := e.Event.(datastore.PropertyLoadSaver)
+	if !ok {
+		return datastore.SaveStruct(e)
+	}
+	properties, err := pls.Save()
+	if err != nil {
+		return nil, err
+	}
+	aux := &eventDocument{
+		AggregateID:   e.AggregateID,
+		AggregateType: e.AggregateType,
+		Event:         nil,
+		Version:       e.Version,
+		EventType:     e.EventType,
+	}
+	p, err := datastore.SaveStruct(aux)
+	p = append(p, datastore.Property{Name: "Event", NoIndex: true, Value: datastore.Entity{Properties: properties}})
+	return p, nil
+}
+
 func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, error) {
 	query := r.createQuery().
 		Filter("aggregateID=", id).
