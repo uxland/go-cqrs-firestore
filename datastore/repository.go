@@ -117,6 +117,13 @@ func (r *repo) loadEvents(ctx context.Context, id string) ([]ycq.EventMessage, e
 		}
 		event := r.EventFactory.GetEvent(doc.EventType)
 		entity := doc.Event.(*datastore.Entity)
+
+		if pls, ok := event.(datastore.PropertyLoadSaver); ok {
+			err = pls.Load(entity.Properties)
+		} else {
+			err = datastore.LoadStruct(event, entity.Properties)
+		}
+
 		err = datastore.LoadStruct(event, entity.Properties)
 		if err != nil {
 			return nil, err
