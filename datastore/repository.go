@@ -111,10 +111,15 @@ func (e *eventDocument) Save() ([]datastore.Property, error) {
 	if err != nil {
 		return nil, err
 	}
-	aux := &eventDocument{
+	type tmp struct {
+		AggregateID   string `datastore:"aggregateID"`
+		AggregateType string `datastore:"aggregateType"`
+		Version       int    `datastore:"version"`
+		EventType     string `datastore:"eventType"`
+	}
+	aux := &tmp{
 		AggregateID:   e.AggregateID,
 		AggregateType: e.AggregateType,
-		Event:         nil,
 		Version:       e.Version,
 		EventType:     e.EventType,
 	}
