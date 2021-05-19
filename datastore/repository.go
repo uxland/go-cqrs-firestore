@@ -4,7 +4,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"context"
 	"errors"
-	"github.com/google/uuid"
+	"fmt"
 	ycq "github.com/jetbasrawi/go.cqrs"
 	"github.com/uxland/go-cqrs-firestore/shared"
 	"google.golang.org/api/iterator"
@@ -181,13 +181,9 @@ func (r *repo) assertExpectedVersion(ctx context.Context, aggregateID string, ex
 	return nil
 }
 func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, aggregate ycq.AggregateRoot, expectedVersion *int) error {
-	err := r.assertExpectedVersion(ctx, aggregate.AggregateID(), *expectedVersion)
-	if err != nil {
-		return err
-	}
 	for _, message := range aggregate.GetChanges() {
 
-		id := uuid.New().String()
+		id := fmt.Sprintf("%s:%d", message.AggregateID(), *message.Version()) //uuid.New().String()
 		props := &eventDocument{
 			AggregateID:   message.AggregateID(),
 			AggregateType: r.AggregateType,
@@ -197,13 +193,13 @@ func (r *repo) save(transaction *datastore.Transaction, ctx context.Context, agg
 		}
 
 		key := newKey(r.Namespace, r.EventsKind, id, nil)
-		_, err = transaction.Put(key, props)
+		_, err := transaction.Put(key, props)
 		if err != nil {
 			return err
 		}
 		r.Bus.PublishEvent(message)
 	}
-	return nil
+	return r.assertExpectedVersion(ctx, aggregate.AggregateID(), *expectedVersion)
 }
 
 func (r *repo) createQuery() *datastore.Query {

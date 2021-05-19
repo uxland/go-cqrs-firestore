@@ -4,6 +4,7 @@ import (
 	"context"
 	ycq "github.com/jetbasrawi/go.cqrs"
 	"reflect"
+	"sync"
 )
 
 type GenericUnitOfWork interface {
@@ -20,10 +21,11 @@ type AggregateDefinition struct {
 
 type BaseGenericUnitOfWork struct {
 	Repos map[string]Repository
+	sync.Mutex
 }
 
 func NewBaseGenericUnitOfWork() *BaseGenericUnitOfWork {
-	return &BaseGenericUnitOfWork{Repos: map[string]Repository{}}
+	return &BaseGenericUnitOfWork{Repos: map[string]Repository{}, Mutex: sync.Mutex{}}
 }
 
 func (uow *BaseGenericUnitOfWork) GetAggregateRepo(aggregateType reflect.Type) Repository {
@@ -43,12 +45,14 @@ func (uow *BaseGenericUnitOfWork) Save(aggregate ycq.AggregateRoot, expectedVers
 
 func (uow *BaseGenericUnitOfWork) CommitAllChanges(ctx context.Context, transaction interface{}) error {
 	var err error = nil
+	uow.Lock()
 	for _, repository := range uow.Repos {
 		err = repository.CommitChanges(ctx, transaction)
 		if err != nil {
 			break
 		}
 	}
+	uow.Unlock()
 	return err
 }
 
